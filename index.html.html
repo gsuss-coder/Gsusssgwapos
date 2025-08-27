@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Word Typing Game </title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+
+    body {
+        font-family: 'Orbitron', sans-serif;
+        padding: 20px;
+        background: linear-gradient(135deg, #2c3e50, #3498db);
+        color: #fff;
+        text-align: center;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    h2, h3 {
+        color: #ffdd59;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+
+    form, #startBtn {
+        margin-top: 10px;
+    }
+
+    input[type="text"] {
+        padding: 10px;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        outline: none;
+        width: 220px;
+        margin-right: 5px;
+    }
+
+    button {
+        background: #ffdd59;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+
+    button:hover {
+        background: #f1c40f;
+        transform: scale(1.05);
+    }
+
+    #wordList {
+        margin-top: 10px;
+        padding-left: 0;
+        list-style: none;
+    }
+
+    #wordList li {
+        background: rgba(255,255,255,0.1);
+        padding: 6px 10px;
+        margin: 4px 0;
+        border-radius: 5px;
+    }
+
+    #gameSection {
+        margin-top: 20px;
+        padding: 20px;
+        background: rgba(0,0,0,0.3);
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        max-width: 350px;
+        width: 100%;
+    }
+
+    #currentWord {
+        font-size: 28px;
+        margin-bottom: 15px;
+        color: #fff;
+    }
+
+    .correct {
+        color: #2ecc71;
+        font-weight: bold;
+        font-size: 18px;
+    }
+
+    .incorrect {
+        color: #e74c3c;
+        font-weight: bold;
+        font-size: 18px;
+    }
+</style>
+</head>
+<body>
+
+<h2>Word Typing Game</h2>
+
+
+<form id="wordForm">
+    <input type="text" id="wordInput" placeholder="Type a word" required>
+    <button type="submit">Add Word</button>
+</form>
+
+
+<ul id="wordList"></ul>
+
+
+<button id="startBtn">Start Game</button>
+
+<div id="gameSection" style="display:none;">
+    <h3 id="currentWord"></h3>
+    <form id="answerForm">
+        <input type="text" id="answerInput" placeholder="Type the word here" required>
+    </form>
+    <p id="result"></p>
+</div>
+
+<script>
+let wordCollection = [];
+let currentWordIndex = 0;
+let debounceTimeout;
+let lastThrottleTime = 0;
+let score = 0;
+
+function debounce(func, delay) {
+    return function(...args) {
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => func.apply(this, args), delay);
+    };
+}
+
+function throttle(func, limit) {
+    return function(...args) {
+        const now = Date.now();
+        if (now - lastThrottleTime >= limit) {
+            func.apply(this, args);
+            lastThrottleTime = now;
+        }
+    };
+}
+
+function updateWordListDisplay() {
+    const listElement = document.getElementById('wordList');
+    listElement.innerHTML = '';
+    wordCollection.forEach(word => {
+        const listItem = document.createElement('li');
+        listItem.textContent = word;
+        listElement.appendChild(listItem);
+    });
+}
+
+function displayCurrentWord() {
+    document.getElementById('currentWord').textContent = wordCollection[currentWordIndex];
+    document.getElementById('answerInput').value = '';
+    document.getElementById('result').textContent = '';
+}
+
+function checkAnswer() {
+    const typedWord = document.getElementById('answerInput').value.trim();
+    const resultMessage = document.getElementById('result');
+
+    if (typedWord.toLowerCase() === wordCollection[currentWordIndex].toLowerCase()) {
+        resultMessage.textContent = "✅ Correct! Press Enter to continue.";
+        resultMessage.className = "correct";
+        return true;
+    } else {
+        resultMessage.textContent = "❌ Incorrect! Keep typing.";
+        resultMessage.className = "incorrect";
+        return false;
+    }
+}
+
+function goToNextWord() {
+    currentWordIndex++;
+    if (currentWordIndex >= wordCollection.length) {
+        document.getElementById('result').textContent = `🎯 Game Over! Score: ${score}/${wordCollection.length}`;
+        document.getElementById('answerInput').disabled = true;
+        return;
+    }
+    displayCurrentWord();
+}
+
+document.getElementById('wordForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const inputField = document.getElementById('wordInput');
+    const newWord = inputField.value.trim();
+    if (newWord !== '') {
+        wordCollection.push(newWord);
+        updateWordListDisplay();
+        inputField.value = '';
+    }
+});
+
+document.getElementById('startBtn').addEventListener('click', function() {
+    if (wordCollection.length === 0) {
+        alert("Please add some words first!");
+        return;
+    }
+    document.getElementById('gameSection').style.display = 'block';
+    currentWordIndex = 0;
+    score = 0;
+    document.getElementById('answerInput').disabled = false;
+    displayCurrentWord();
+});
+
+document.getElementById('answerInput').addEventListener('input', debounce(checkAnswer, 500));
+document.getElementById('answerInput').addEventListener('input', throttle(() => {
+    console.log("Throttle feedback: " + document.getElementById('answerInput').value);
+}, 1000));
+
+document.getElementById('answerForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    if (checkAnswer()) {
+        score++;
+        goToNextWord();
+    }
+});
+</script>
+
+</body>
+</html>
